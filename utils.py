@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 import numpy as np
@@ -12,7 +12,7 @@ import pytextrank
 import sys
 
 
-# In[ ]:
+# In[2]:
 
 
 def get_docs1(doctype, posts_collection, tl_comments_collection, key_phrase_exists=True, include_undeltad_posts=False):
@@ -42,39 +42,21 @@ def get_docs1(doctype, posts_collection, tl_comments_collection, key_phrase_exis
         deltad_tl_comment_ids = [item for sublist in deltad_tl_comment_ids for item in sublist]
         all_tl_comment_ids = [item for sublist in all_tl_comment_ids for item in sublist]
 
-        # get ids of TL Comments that did not result in deltas from posts where OP did award deltas
+        # get ids of top level comments that did not result in deltas from posts where OP did award deltas
         undeltad_tl_comment_ids = list(set(all_tl_comment_ids) - set(deltad_tl_comment_ids))
         
-        # retrieve TL comments resulting in deltas by id
+        # retrieve top level comments resulting in deltas by id
         deltad_tl_comment_gen = tl_comments_collection.find( {'$and': [{'comment_id': {"$in": deltad_tl_comment_ids}},{'key_phrases': {"$exists": key_phrase_exists}}]})
-        # retrieve TL comments NOT resulting in deltas
+        # retrieve top level comments NOT resulting in deltas
         undeltad_tl_comment_gen = tl_comments_collection.find( {'$and': [{'comment_id': {"$in": undeltad_tl_comment_ids}},{'key_phrases': {"$exists": key_phrase_exists}}]})
         
         #get final doc dictionaries
         deltad_docs = [{'id': comment[f'{doctype}_id'], 'text': comment[f'{doctype}_text'], 'label': 1} for comment in deltad_tl_comment_gen]
         undeltad_docs = [{'id': comment[f'{doctype}_id'], 'text': comment[f'{doctype}_text'], 'label': 0} for comment in undeltad_tl_comment_gen]
-    '''
-    if doctype == 'post+comment':
-        # get combined post+comment documents
-        for post in deltad_post_gen:
-            deltad_tl_comment_ids = post['tl_comment_delta_parents']
-            all_tl_comment_ids = post['comment_ids']
-            # get ids of TL Comments that did not result in deltas from posts where OP did award deltas
-            undeltad_tl_comment_ids = list(set(all_tl_comment_ids) - set(deltad_tl_comment_ids))
-        
-            # retrieve TL comments resulting in deltas by id
-            deltad_tl_comment_gen = tl_comments_collection.find( {'$and': [{'comment_id': {"$in": deltad_tl_comment_ids}},{'key_phrases': {"$exists": key_phrase_exists}}]})
-            # retrieve TL comments NOT resulting in deltas
-            undeltad_tl_comment_gen = tl_comments_collection.find( {'$and': [{'comment_id': {"$in": undeltad_tl_comment_ids}},{'key_phrases': {"$exists": key_phrase_exists}}]})
-        
-        #get final doc dictionaries
-        deltad_docs = [{'id': comment[f'{doctype}_id'], 'text': comment[f'{doctype}_text'], 'label': 1} for comment in deltad_tl_comment_gen]
-        undeltad_docs = [{'id': comment[f'{doctype}_id'], 'text': comment[f'{doctype}_text'], 'label': 0} for comment in undeltad_tl_comment_gen]
-    '''    
     return deltad_docs, undeltad_docs
 
 
-# In[ ]:
+# In[3]:
 
 
 def get_docs(posts_collection, tl_comments_collection, key_phrase_exists=True, include_undeltad_posts=False):
@@ -111,7 +93,7 @@ def get_docs(posts_collection, tl_comments_collection, key_phrase_exists=True, i
     return all_deltad_comments, all_undeltad_comments
 
 
-# In[ ]:
+# In[4]:
 
 
 def doc_split(deltad_docs, undeltad_docs, test_ratio=0.2, val_set=True, val_ratio=0.2, rand_state=42): 
@@ -158,7 +140,7 @@ def doc_split(deltad_docs, undeltad_docs, test_ratio=0.2, val_set=True, val_rati
     return train_docs, test_docs, val_docs
 
 
-# In[ ]:
+# In[10]:
 
 
 def get_fields(list_of_doc_dicts):
@@ -166,12 +148,12 @@ def get_fields(list_of_doc_dicts):
     Simple helper function takes in a list of doc dicts,
     returns separate lists of doc ids, doc_texts, doc_labels and the post id that generated the comment.
     '''
-    doc_tuples = [(doc['id'],doc['text'],doc['label'], doc['post_id']) for doc in list_of_doc_dicts]
-    (doc_ids, doc_texts, doc_labels, doc_posts) = zip(*doc_tuples)
+    doc_tuples = [(doc['id'],doc['text'],doc['label'], doc['post_id'], doc['post_text']) for doc in list_of_doc_dicts]
+    (doc_ids, doc_texts, doc_labels, doc_post_ids, doc_post_texts) = zip(*doc_tuples)
     return doc_ids, doc_texts, doc_labels, doc_post_ids, doc_post_texts
 
 
-# In[ ]:
+# In[10]:
 
 
 def clean_text(texts):
@@ -179,8 +161,6 @@ def clean_text(texts):
     Takes in list of text strings to tokenize, returns cleaned texts,
     with all punctuation and digits stripped and all characters converted to lowercase
     '''
-    stemmer_inst = stemmer()
-    tokenizer_inst = tokenizer()
     cleaned_texts = []
     for text in texts:
         #strip punctuation and digits from whole text
